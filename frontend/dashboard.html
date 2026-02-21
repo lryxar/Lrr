@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lrrhub | لوحة التحكم</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="container nav">
+      <div class="brand"><span class="brand-badge">LR</span> lrrhub</div>
+      <nav class="nav-links">
+        <a href="/index.html">الرئيسية</a>
+        <a href="/login.html">الحساب</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container" style="margin-top:26px;">
+    <section class="kpis">
+      <div class="kpi"><p>الحالة</p><h3 id="status">Ready</h3></div>
+      <div class="kpi"><p>Owner ID</p><h3 id="owner">-</h3></div>
+      <div class="kpi"><p>Platform</p><h3>lrrhub / l19r</h3></div>
+    </section>
+
+    <section class="grid" style="margin-top:18px;">
+      <article class="card">
+        <div class="card-body">
+          <h2 style="margin-top:0">إنشاء بوت جديد</h2>
+          <p class="muted">اكتب الاسم والكود ثم أنشئ بوتك.</p>
+          <div class="stack">
+            <input id="botName" placeholder="اسم البوت" />
+            <textarea id="source" placeholder="ضع كود البوت Python هنا..."></textarea>
+          </div>
+          <div class="actions">
+            <button class="btn" onclick="createBot()">Create Bot</button>
+            <button class="btn light" onclick="setTemplate()">قالب سريع</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <h3 style="margin-top:6px">إدارة بوت موجود</h3>
+        <div class="stack">
+          <input id="botId" placeholder="Bot ID" />
+          <div class="actions">
+            <button class="btn" onclick="startBot()">Start</button>
+            <button class="btn ghost" onclick="stopBot()">Stop</button>
+            <button class="btn light" onclick="logsBot()">Logs</button>
+          </div>
+        </div>
+        <pre id="output" class="console">{ "info": "جاهز للأوامر" }</pre>
+      </article>
+    </section>
+
+    <div class="footer">© lrrhub — جميع الحقوق محفوظة لـ l19r</div>
+  </main>
+
+  <script>
+    const ownerId = Number(localStorage.getItem('owner_id'));
+    document.getElementById('owner').textContent = ownerId || 'غير متوفر';
+
+    function setStatus(text) {
+      document.getElementById('status').textContent = text;
+    }
+
+    function setTemplate() {
+      document.getElementById('source').value = [
+        'import time',
+        'print("lrrhub bot started")',
+        'while True:',
+        '    print("tick from l19r bot")',
+        '    time.sleep(5)'
+      ].join('\n');
+    }
+
+    async function request(path, method = 'GET', body = null) {
+      const output = document.getElementById('output');
+      setStatus('Loading...');
+      try {
+        const res = await fetch(path, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: body ? JSON.stringify(body) : null,
+        });
+        const data = await res.json();
+        output.textContent = JSON.stringify(data, null, 2);
+        setStatus(res.ok ? 'Success' : 'API Error');
+      } catch (e) {
+        output.textContent = JSON.stringify({ error: String(e) }, null, 2);
+        setStatus('Network Error');
+      }
+    }
+
+    function createBot() {
+      request('/bots/', 'POST', {
+        owner_id: ownerId,
+        name: document.getElementById('botName').value,
+        source_code: document.getElementById('source').value,
+      });
+    }
+
+    function startBot() {
+      request(`/bots/${document.getElementById('botId').value}/start`, 'POST', { owner_id: ownerId });
+    }
+
+    function stopBot() {
+      request(`/bots/${document.getElementById('botId').value}/stop`, 'POST', { owner_id: ownerId });
+    }
+
+    function logsBot() {
+      request(`/bots/${document.getElementById('botId').value}/logs?owner_id=${ownerId}`);
+    }
+  </script>
+</body>
+</html>
